@@ -21,7 +21,7 @@ namespace ReactiveUI.Validation
 
     public static class ViewModelIValidateableMixins
     {
-        public static IDisposable Validator<TViewModel, TViewModelProp>(this TViewModel viewModel,
+        public static IDisposable ValidationRule<TViewModel, TViewModelProp>(this TViewModel viewModel,
             Expression<Func<TViewModel,TViewModelProp>> viewModelProperty,
             IObservable<bool> validObservable,
             string message)
@@ -30,7 +30,7 @@ namespace ReactiveUI.Validation
             return Disposable.Empty;
         }
 
-        public static IDisposable Validator<TViewModel>(this TViewModel viewModel,
+        public static IDisposable ValidationRule<TViewModel>(this TViewModel viewModel,
             IObservable<bool> validObservable,
             string message)
             where TViewModel : ReactiveObject, IValidateable
@@ -38,13 +38,19 @@ namespace ReactiveUI.Validation
             return Disposable.Empty;
         }
 
-        public static IDisposable Validator<TViewModel, TViewModelProp>(this TViewModel viewModel,
+        public static IDisposable ValidationRule<TViewModel, TViewModelProp>(this TViewModel viewModel,
             Expression<Func<TViewModel, TViewModelProp>> viewModelProperty,
             Func<TViewModelProp, bool> viewPropertyValid,
             string message)
             where TViewModel : ReactiveObject, IValidateable
         {
             return Disposable.Empty;
+        }
+
+        public static IObservable<bool> Valid<TViewModel>(this TViewModel viewModel)
+            where TViewModel : ReactiveObject, IValidateable
+        {
+            return viewModel.ValidationContext.Valid;
         }
     }
 }

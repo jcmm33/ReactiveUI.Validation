@@ -18,7 +18,7 @@ namespace ReactiveUI.Validation.Droid
 
         private TextView validationSummary { get; set; }
 
-        private TextView age { get; set; }
+        private EditText age { get; set; }
 
 		protected override void OnCreate (Bundle bundle)
 		{
@@ -31,7 +31,8 @@ namespace ReactiveUI.Validation.Droid
 		    this.BindValidation(ViewModel, vm => vm.Name, v => v.nameValidation.Text);
 
             // Use bind validity of view model property to invoke custom action
-		    this.BindValidation(ViewModel, vm => vm.Age,(valid) =>
+            // in this case, change the background color of the age control
+            this.BindValidation(ViewModel, vm => vm.Age,(valid) =>
 		    {
 		        age.SetBackgroundColor(valid ? Color.Red : Color.Transparent); 
 		    });
