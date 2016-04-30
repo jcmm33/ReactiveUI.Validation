@@ -27,6 +27,7 @@ namespace ReactiveUI.Validation
             string message)
             where TViewModel:ReactiveObject,IValidateable
         {
+
             return Disposable.Empty;
         }
 
