@@ -8,45 +8,82 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
+using Android.Support.Design.Widget;
+using Android.Support.V7.App;
+using ReactiveUI.Framework.Android.Views;
 
 namespace ReactiveUI.Validation.Droid
 {
-	[Activity (Label = "ReactiveUI.Validation.Droid", MainLauncher = true, Icon = "@drawable/icon")]
-	public class MainActivity : Activity,IViewFor<SampleViewModel>
-	{
-	    private TextView nameValidation { get; set; }
+    [Activity(Label = "ReactiveUI.Validation.Droid", MainLauncher = true, Icon = "@drawable/icon")]
+    public class MainActivity : ReactiveAppCompatActivity<SampleViewModel>
+    {
+        public EditText nameEdit { get; set; }
 
-        private TextView validationSummary { get; set; }
+        public EditText ageEdit { get; set; }
 
-        private EditText age { get; set; }
 
-		protected override void OnCreate (Bundle bundle)
-		{
-			base.OnCreate (bundle);
+        public TextView nameValidation { get; set; }
 
-			// Set our view from the "main" layout resource
-			SetContentView (Resource.Layout.Main);
+        public TextView ageValidation { get; set; }
 
-            // Bind validation text for view model property to a specified control
-		    this.BindValidation(ViewModel, vm => vm.Name, v => v.nameValidation.Text);
+        public TextView validationSummary { get; set; }
+
+        public Button myButton { get; set; }
+
+        public TextInputLayout til { get; set; }
+
+        public TextInputEditText tiet { get; set; }
+
+        protected override void OnCreate(Bundle bundle)
+        {
+            base.OnCreate(bundle);
+
+            try
+            {
+                SetContentView(Resource.Layout.Main);
+            }
+            catch (Exception ex)
+            {
+                
+                throw;
+            }
+
+            // Set our view from the "main" layout resource
+
+
+            this.WireUpControls();
+
+            ViewModel = new SampleViewModel();
+
+		    this.BindCommand(ViewModel, vm => vm.Save, v => v.myButton);
+
+		    this.Bind(ViewModel, vm => vm.Name, v => v.nameEdit.Text);
+
+            this.Bind(ViewModel, vm => vm.Age, v => v.ageEdit.Text);
+
+            this.BindValidation(ViewModel, vm => vm.NameRule, v => v.nameValidation.Text);
+
+            this.BindValidation(ViewModel, vm => vm.Age, v => v.ageValidation.Text);
+
+            // need to be able to bind the summary now
+		    this.BindValidation(ViewModel, v => v.validationSummary.Text);
+
+            this.BindValidation(ViewModel, vm => vm.ComplexRule,til);
+
+            // outstanding binding scenarios : 
+            // 3. strict and loose matching resulting in multiple bringing togethers of same property
 
             // Use bind validity of view model property to invoke custom action
             // in this case, change the background color of the age control
+            /*
             this.BindValidation(ViewModel, vm => vm.Age,(valid) =>
-		    {
-		        age.SetBackgroundColor(valid ? Color.Red : Color.Transparent); 
-		    });
-
+            {
+                age.SetBackgroundColor(valid ? Color.Red : Color.Transparent); 
+            });
+            */
             // bind the overall validation summary to the specified control
-            this.BindValidationSummary(ViewModel, v => v.validationSummary.Text);
+            //this.BindValidationSummary(ViewModel, v => v.validationSummary.Text);
+
         }
-
-	    object IViewFor.ViewModel
-	    {
-	        get { return ViewModel; }
-	        set { ViewModel = (SampleViewModel)value; }
-	    }
-
-	    public SampleViewModel ViewModel { get; set; }
 	}
 }

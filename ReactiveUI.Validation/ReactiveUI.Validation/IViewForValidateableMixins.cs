@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,33 +11,90 @@ namespace ReactiveUI.Validation
 {
     public static class IViewForValidateableMixins
     {
-        /*            this.BindValidation(ViewModel, vm => vm.SaveName, v => v.textView);
-
-            this.BindValidation(ViewModel, vm => vm.SaveName, (valid) => textView.Border = valid ? Red : Gray);
-
-            this.BindValidationSummary(ViewModel, v => v.ValidationSummary.Text);
-        */
-
-        public static IDisposable BindValidation<TView, TViewModel, TViewModelProp,TViewProp>(this TView view,
-            TViewModel viewModel, Expression<Func<TViewModel, TViewModelProp>> viewModelProperty,
-            Expression<Func<TView,TViewProp>> viewProperty)
-            where TViewModel : ReactiveObject, IValidateable
+        /// <summary>
+        /// Bind the specified view property validation to the view property.
+        /// </summary>
+        /// <typeparam name="TView"></typeparam>
+        /// <typeparam name="TViewModel"></typeparam>
+        /// <typeparam name="TViewModelProperty1"></typeparam>
+        /// <typeparam name="TViewProperty"></typeparam>
+        /// <param name="view"></param>
+        /// <param name="viewModel"></param>
+        /// <param name="viewModelProperty1"></param>
+        /// <param name="viewProperty"></param>
+        /// <returns></returns>
+        public static IDisposable BindValidation<TView, TViewModel, TViewModelProperty1,TViewProperty>(this TView view,
+            TViewModel viewModel, Expression<Func<TViewModel, TViewModelProperty1>> viewModelProperty1,
+            Expression<Func<TView,TViewProperty>> viewProperty)
+            where TViewModel : ReactiveObject, ISupportsValidation
             where TView:IViewFor<TViewModel>
         {
-            return Disposable.Empty;
+            return ValidationBinding.ForProperty(view, viewModelProperty1, viewProperty);
         }
 
-        public static IDisposable BindValidationSummary<TView, TViewModel, TViewProp>(this TView view,
-            TViewModel viewModel, Expression<Func<TView, TViewProp>> viewProperty)
+        /// <summary>
+        /// Bind the overall validation of a view model to a specified view property.
+        /// </summary>
+        /// <typeparam name="TView"></typeparam>
+        /// <typeparam name="TViewModel"></typeparam>
+        /// <typeparam name="TViewProperty"></typeparam>
+        /// <param name="view"></param>
+        /// <param name="viewModel"></param>
+        /// <param name="viewProperty"></param>
+        /// <returns></returns>
+        public static IDisposable BindValidation<TView, TViewModel,TViewProperty>(this TView view,
+            TViewModel viewModel,Expression<Func<TView, TViewProperty>> viewProperty)
+            where TViewModel : ReactiveObject, ISupportsValidation
+            where TView : IViewFor<TViewModel>
         {
-            return Disposable.Empty;
+            return ValidationBinding.ForViewModel<TView,TViewModel,TViewProperty>(view, viewProperty);
         }
 
-        public static IDisposable BindValidation<TView, TViewModel, TViewModelProp>(this TView view,TViewModel viewModel,
-            Expression<Func<TViewModel, TViewModelProp>> viewModelProperty,
-            Action<bool>  viewAction)
+
+        /// <summary>
+        /// Bind a <see cref="ValidationHelper"/> from a view model to a specified view property.
+        /// </summary>
+        /// <typeparam name="TView"></typeparam>
+        /// <typeparam name="TViewModel"></typeparam>
+        /// <typeparam name="TViewProperty"></typeparam>
+        /// <param name="view"></param>
+        /// <param name="viewModel"></param>
+        /// <param name="viewModelHelperProperty"></param>
+        /// <param name="viewProperty"></param>
+        /// <returns></returns>
+        public static IDisposable BindValidation<TView, TViewModel, TViewProperty>(this TView view,
+            TViewModel viewModel, Expression<Func<TViewModel, ValidationHelper>> viewModelHelperProperty,
+            Expression<Func<TView, TViewProperty>> viewProperty)
+            where TViewModel : ReactiveObject, ISupportsValidation
+            where TView : IViewFor<TViewModel>
         {
-            return Disposable.Empty;
+            return ValidationBinding.ForValidationHelperProperty(view, viewModelHelperProperty, viewProperty);
+        }
+
+
+        public static IDisposable BindToDirect<TTarget, TValue>(IObservable<TValue> This,TTarget target,Expression viewExpression)
+        {
+            var setter = Reflection.GetValueSetterOrThrow(viewExpression.GetMemberInfo());
+            if (viewExpression.GetParent().NodeType == ExpressionType.Parameter)
+            {
+                return This.Subscribe(
+                    x => setter(target, x, viewExpression.GetArgumentsArray()),
+                    ex => {
+                        //this.Log().ErrorException(String.Format("{0} Binding received an Exception!", viewExpression), ex);
+                    });
+            }
+
+            var bindInfo = Observable.CombineLatest(
+                This, target.WhenAnyDynamic(viewExpression.GetParent(), x => x.Value),
+                (val, host) => new { val, host });
+
+            return bindInfo
+                .Where(x => x.host != null)
+                .Subscribe(
+                    x => setter(x.host, x.val, viewExpression.GetArgumentsArray()),
+                    ex => {
+                        //this.Log().ErrorException(String.Format("{0} Binding received an Exception!", viewExpression), ex);
+                    });
         }
     }
 }
